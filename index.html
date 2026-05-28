@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fake Protect</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Roboto', system-ui, sans-serif;
+      background: #f8f9fa;
+      color: #202124;
+    }
+
+    .header {
+      background: #1a73e8;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+    }
+
+    .main-content {
+      padding-top: 60px;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .container {
+      padding: 20px 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .icon-area { text-align: center; padding: 32px 0 20px; }
+    .shield { font-size: 72px; }
+    .title { font-size: 20px; font-weight: 600; text-align: center; margin: 10px 20px; }
+    .subtitle { text-align: center; color: #5f6368; font-size: 15px; padding: 0 24px 20px; }
+
+    .scan-area {
+      background: #f8f9fa;
+      margin: 0 16px 20px;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #dadce0;
+    }
+
+    .progress-container {
+      height: 8px;
+      background: #e8eaed;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: #1a73e8;
+      transition: width 0.5s linear;
+    }
+
+    .threat-list {
+      margin: 0 16px 20px;
+      background: white;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .threat-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .button-area {
+      padding: 0 16px 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .button-area button {
+      padding: 16px;
+      font-size: 16.5px;
+      font-weight: 600;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-remove { background: #1a73e8; color: white; }
+    .btn-buy { background: #d93025; color: white; }
+
+    /* 팝업 */
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 92%;
+      max-width: 360px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+      z-index: 10000;
+      display: none;
+      overflow: hidden;
+    }
+
+    .popup-header {
+      background: #d93025;
+      color: white;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: bold;
+      position: relative;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      opacity: 0.9;
+    }
+
+    .popup-body {
+      padding: 24px;
+      text-align: center;
+      font-size: 15.8px;
+    }
+
+    .popup button {
+      margin-top: 18px;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">Fake Protect</div>
+
+  <div class="main-content">
+    <div class="container">
+      <div class="card">
+        <div class="icon-area">
+          <div class="shield">🛡️</div>
+          <div class="title">기기에서 심각한 위협이 감지되었습니다</div>
+          <div class="subtitle">
+            Fake Protect가 여러 악성 앱을 발견했습니다.<br>
+            스캔이 완료되면 자동으로 조치됩니다.
+          </div>
+        </div>
+
+        <div class="scan-area">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14.5px;">
+            <span>기기 전체 검사 중...</span>
+            <span id="percent">0</span>%
+          </div>
+          <div class="progress-container">
+            <div class="progress" id="progress"></div>
+          </div>
+        </div>
+
+        <div class="threat-list" id="threat-list"></div>
+
+        <div class="button-area">
+          <button class="btn-remove" onclick="removeThreats()">모두 제거하기</button>
+          <button class="btn-buy" onclick="buyPremium()">프리미엄 보호 구매하기 (₩19,900)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 팝업들 -->
+  <div class="popup" id="popup1">
+    <div class="popup-header">
+      🚨 긴급 보안 경고
+      <span class="close-btn" onclick="closePopup(this)">×</span>
+    </div>
+    <div class="popup-body">
+      <p>바이러스가 감지되었습니다.<br>지금 제거하지 않으면 데이터가 삭제될 수 있습니다.</p>
+      <button onclick="closePopup(this)" style="background:#d93025; color:white;">지금 제거하기</button>
+    </div>
+  </div>
+
+  <div class="popup" id="popup2">
+    <div class="popup-header">
+      💰 특별 제안
+      <span class="close-btn" onclick="closePopup(this)">×</span>
+    </div>
+    <div class="popup-body">
+      <p>Android 프리미엄 보안 1년 이용권<br>단돈 ₩14,900</p>
+      <button onclick="closePopup(this)" style="background:#1a73e8; color:white;">지금 구매하기</button>
+    </div>
+  </div>
+
+  <div class="popup" id="popup3">
+    <div class="popup-header">
+      ⚠️ 시스템 위험 알림
+      <span class="close-btn" onclick="closePopup(this)">×</span>
+    </div>
+    <div class="popup-body">
+      <p>중요 파일이 손상되고 있습니다.<br>즉시 조치가 필요합니다.</p>
+      <button onclick="closePopup(this)" style="background:#d93025; color:white;">파일 복구하기</button>
+    </div>
+  </div>
+
+  <div class="popup" id="popup4">
+    <div class="popup-header">
+      🔒 계정 탈취 위험
+      <span class="close-btn" onclick="closePopup(this)">×</span>
+    </div>
+    <div class="popup-body">
+      <p>카카오톡과 네이버 계정이 위험합니다.</p>
+      <button onclick="closePopup(this)" style="background:#1a73e8; color:white;">계정 보호하기</button>
+    </div>
+  </div>
+
+  <!-- 해킹 화면 -->
+  <div id="hacked-screen" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#111; color:#ff5555; flex-direction:column; align-items:center; justify-content:center; z-index:9999; text-align:center; padding:30px;">
+    <h2 style="margin-bottom:20px;">⚠️ 보안 시스템이 침투되었습니다</h2>
+    <div style="background:#1a1a1a; padding:18px; border-radius:8px; font-size:15px; text-align:left; width:100%; max-width:340px; color:#ff8888;">
+      접근 권한 획득 완료...<br>
+      갤러리 접근 중...<br>
+      카카오톡 데이터 읽는 중...<br>
+      파일 암호화 진행 중...
+    </div>
+  </div>
+
+  <!-- 장난 화면 -->
+  <div id="joke-screen" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.96); color:white; flex-direction:column; align-items:center; justify-content:center; z-index:10000; text-align:center; padding:40px 20px;">
+    <h2 style="color:#34a853; font-size:27px; margin-bottom:25px;">😂 장난입니다!</h2>
+    <p style="font-size:17.5px; line-height:1.6;">
+      이건 친구를 놀래키기 위한<br>
+      <strong>완전 가짜 장난 페이지</strong>예요.<br><br>
+      실제로는 아무 일도 일어나지 않습니다.
+    </p>
+  </div>
+
+  <script>
+    const threats = ["com.clean.master.pro", "Battery Optimizer", "Security Shield", "System Update Service", "Flash Player"];
+    const list = document.getElementById('threat-list');
+    threats.forEach(threat => {
+      const div = document.createElement('div');
+      div.className = 'threat-item';
+      div.innerHTML = `<span style="font-size:23px;">📱</span><div style="flex:1;"><div style="font-weight:500;">${threat}</div><div style="font-size:13.5px; color:#d93025;">High Risk</div></div>`;
+      list.appendChild(div);
+    });
+
+    let progress = 0;
+    const progressBar = document.getElementById('progress');
+    const percentText = document.getElementById('percent');
+
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 2.3 + 1.1;
+      if (progress > 100) progress = 100;
+      progressBar.style.width = progress + '%';
+      percentText.textContent = Math.floor(progress);
+
+      if (progress >= 100) {
+        clearInterval(progressInterval);
+        setTimeout(showHackedScreen, 700);
+      }
+    }, 380);
+
+    const popupIds = ['popup1', 'popup2', 'popup3', 'popup4'];
+
+    function showRandomPopup() {
+      const randomId = popupIds[Math.floor(Math.random() * popupIds.length)];
+      const popup = document.getElementById(randomId);
+      popup.style.display = 'block';
+
+      setTimeout(() => {
+        if (popup.style.display === 'block') popup.style.display = 'none';
+      }, 5000);
+    }
+
+    setInterval(() => {
+      if (progress < 93) showRandomPopup();
+    }, 1900 + Math.random() * 2400);
+
+    function closePopup(btn) {
+      btn.parentElement.parentElement.style.display = 'none';
+    }
+
+    function removeThreats() {
+      alert("악성 앱을 제거하는 중...\n(가짜 사이트입니다)");
+    }
+
+    function buyPremium() {
+      alert("결제 페이지로 이동합니다...\n\n※ 이 사이트는 장난용 가짜 페이지입니다.");
+    }
+
+    function showHackedScreen() {
+      document.getElementById('hacked-screen').style.display = 'flex';
+      setTimeout(() => {
+        document.getElementById('hacked-screen').style.display = 'none';
+        document.getElementById('joke-screen').style.display = 'flex';
+      }, 3400);
+    }
+  </script>
+</body>
+</html>
